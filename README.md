@@ -1,4 +1,4 @@
-# tokokita
+# TTokoKita Pertemuan 5
 
 Pertemuan 5 (Pertemuan 4 ada di README2.MD)
 
@@ -10,105 +10,408 @@ SHIFT Lama: B
 
 Shift Baru: C
 
-# Penjelasan
-Penjelasan proses yang terjadi dalam aplikasi Flutter meliputi login, register, dan operasi CRUD (Create, Read, Update, Delete) pada produk
+# Penjelasan Integrasi API di Flutter App TokoKita
 
-1. Login (login_page.dart):
+## Proses Login
 
-   a. Pengguna memasukkan email dan password pada form login.
+Proses login ditangani oleh `LoginPage` yang terletak di file `login_page.dart`.
 
-   b. Saat tombol "Login" ditekan, metode `_submit()` dipanggil.
-   
-   c. `LoginBloc.login()` dipanggil dengan email dan password yang dimasukkan.
-   
-   d. Jika login berhasil (kode 200):
-      - Token dan UserID disimpan menggunakan `UserInfo().setToken()` dan `UserInfo().setUserID()`.
-      - Pengguna diarahkan ke `ProdukPage`.
-   
-   e. Jika login gagal, pesan kesalahan ditampilkan menggunakan `WarningDialog`.
+### Langkah-langkah:
 
+1. Pengguna memasukkan email dan password pada form login.
+2. Saat tombol "Login" ditekan, metode `_submit()` dipanggil.
+3. `LoginBloc.login()` dipanggil dengan email dan password yang dimasukkan.
+4. Jika login berhasil (kode 200):
+   - Token dan UserID disimpan menggunakan `UserInfo().setToken()` dan `UserInfo().setUserID()`.
+   - Pengguna diarahkan ke `ProdukPage`.
+5. Jika login gagal, pesan kesalahan ditampilkan menggunakan `WarningDialog`.
 
-2. Registrasi (registrasi_page.dart):
+### Source Code:
 
-   a. Pengguna mengisi form registrasi dengan nama, email, password, dan konfirmasi password.
+```dart
+// login_page.dart
 
-   b. Saat tombol "Registrasi" ditekan, metode `_submit()` dipanggil.
+class _LoginPageState extends State<LoginPage> {
+  // ... (kode lainnya)
 
-   c. `RegistrasiBloc.registrasi()` dipanggil dengan data yang dimasukkan.
+  void _submit() {
+    _formKey.currentState!.save();
+    setState(() {
+      _isLoading = true;
+    });
+    LoginBloc.login(
+            email: _emailTextboxController.text,
+            password: _passwordTextboxController.text)
+        .then((value) async {
+      if (value.code == 200) {
+        await UserInfo().setToken(value.token.toString());
+        await UserInfo().setUserID(int.parse(value.userID.toString()));
+        Navigator.pushReplacement(context,
+            MaterialPageRoute(builder: (context) => const ProdukPage()));
+      } else {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context) => const WarningDialog(
+            description: "Login gagal, silahkan coba lagi",
+          ),
+        );
+      }
+    }, onError: (error) {
+      print(error);
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) => const WarningDialog(
+          description: "Login gagal, silahkan coba lagi",
+        ),
+      );
+    });
+    setState(() {
+      _isLoading = false;
+    });
+  }
+}
+```
 
-   d. Jika registrasi berhasil, `SuccessDialog` ditampilkan.
+## Proses Registrasi
 
-   e. Jika registrasi gagal, `WarningDialog` ditampilkan.
+Proses registrasi ditangani oleh `RegistrasiPage` yang terletak di file `registrasi_page.dart`.
 
+### Langkah-langkah:
 
-3. Menampilkan Daftar Produk (produk_page.dart):
+1. Pengguna mengisi form registrasi dengan nama, email, password, dan konfirmasi password.
+2. Saat tombol "Registrasi" ditekan, metode `_submit()` dipanggil.
+3. `RegistrasiBloc.registrasi()` dipanggil dengan data yang dimasukkan.
+4. Jika registrasi berhasil, `SuccessDialog` ditampilkan.
+5. Jika registrasi gagal, `WarningDialog` ditampilkan.
 
-   a. `ProdukPage` menggunakan `FutureBuilder` untuk memanggil `ProdukBloc.getProduks()`.
+### Source Code:
 
-   b. Daftar produk ditampilkan menggunakan `ListView.builder`.
+```dart
+// registrasi_page.dart
 
-   c. Setiap item produk ditampilkan menggunakan `ItemProduk` widget.
+class _RegistrasiPageState extends State<RegistrasiPage> {
+  // ... (kode lainnya)
 
+  void _submit() {
+    _formKey.currentState!.save();
+    setState(() {
+      _isLoading = true;
+    });
+    RegistrasiBloc.registrasi(
+            nama: _namaTextboxController.text,
+            email: _emailTextboxController.text,
+            password: _passwordTextboxController.text)
+        .then((value) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) => SuccessDialog(
+          description: "Registrasi berhasil, silahkan login",
+          okClick: () {
+            Navigator.pop(context);
+          },
+        ),
+      );
+    }, onError: (error) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) => const WarningDialog(
+          description: "Registrasi gagal, silahkan coba lagi",
+        ),
+      );
+    });
+    setState(() {
+      _isLoading = false;
+    });
+  }
+}
+```
 
-4. Create Produk (produk_form.dart):
+## Menampilkan Daftar Produk
 
-   a. Pengguna mengakses form tambah produk dari `ProdukPage`.
+Daftar produk ditampilkan di `ProdukPage` yang terletak di file `produk_page.dart`.
 
-   b. Pengguna mengisi form dengan kode produk, nama produk, dan harga.
+### Langkah-langkah:
 
-   c. Saat tombol "SIMPAN" ditekan, metode `simpan()` dipanggil.
+1. `ProdukPage` menggunakan `FutureBuilder` untuk memanggil `ProdukBloc.getProduks()`.
+2. Daftar produk ditampilkan menggunakan `ListView.builder`.
+3. Setiap item produk ditampilkan menggunakan `ItemProduk` widget.
 
-   d. `ProdukBloc.addProduk()` dipanggil dengan data produk baru.
+### Source Code:
 
-   e. Jika berhasil, pengguna diarahkan kembali ke `ProdukPage`.
+```dart
+// produk_page.dart
 
-   f. Jika gagal, `WarningDialog` ditampilkan.
+class ProdukPage extends StatefulWidget {
+  // ... (kode lainnya)
 
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('List Produk Toko Kita - Fawwaz'),
+        // ... (kode lainnya)
+      ),
+      body: FutureBuilder<List>(
+        future: ProdukBloc.getProduks(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) print(snapshot.error);
+          return snapshot.hasData
+              ? ListProduk(
+                  list: snapshot.data,
+                )
+              : const Center(
+                  child: CircularProgressIndicator(),
+                );
+        },
+      ),
+    );
+  }
+}
 
-5. Read Produk Detail (produk_detail.dart):
+class ListProduk extends StatelessWidget {
+  final List? list;
+  const ListProduk({Key? key, this.list}) : super(key: key);
 
-   a. Pengguna menekan item produk di `ProdukPage`.
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+        itemCount: list == null ? 0 : list!.length,
+        itemBuilder: (context, i) {
+          return ItemProduk(
+            produk: list![i],
+          );
+        });
+  }
+}
+```
 
-   b. `ProdukDetail` ditampilkan dengan informasi produk yang dipilih.
+## Create Produk
 
+Proses pembuatan produk baru ditangani oleh `ProdukForm` yang terletak di file `produk_form.dart`.
 
-6. Update Produk (produk_form.dart):
+### Langkah-langkah:
 
-   a. Pengguna menekan tombol "EDIT" di `ProdukDetail`.
+1. Pengguna mengakses form tambah produk dari `ProdukPage`.
+2. Pengguna mengisi form dengan kode produk, nama produk, dan harga.
+3. Saat tombol "SIMPAN" ditekan, metode `simpan()` dipanggil.
+4. `ProdukBloc.addProduk()` dipanggil dengan data produk baru.
+5. Jika berhasil, pengguna diarahkan kembali ke `ProdukPage`.
+6. Jika gagal, `WarningDialog` ditampilkan.
 
-   b. Form produk ditampilkan dengan data produk yang ada.
+### Source Code:
 
-   c. Pengguna mengubah data produk.
+```dart
+// produk_form.dart
 
-   d. Saat tombol "UBAH" ditekan, metode `ubah()` dipanggil.
+class _ProdukFormState extends State<ProdukForm> {
+  // ... (kode lainnya)
 
-   e. `ProdukBloc.updateProduk()` dipanggil dengan data produk yang diperbarui.
+  simpan() {
+    setState(() {
+      _isLoading = true;
+    });
+    Produk createProduk = Produk(id: null);
+    createProduk.kodeProduk = _kodeProdukTextboxController.text;
+    createProduk.namaProduk = _namaProdukTextboxController.text;
+    createProduk.hargaProduk = int.parse(_hargaProdukTextboxController.text);
+    ProdukBloc.addProduk(produk: createProduk).then((value) {
+      Navigator.of(context).push(MaterialPageRoute(
+          builder: (BuildContext context) => const ProdukPage()));
+    }, onError: (error) {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) => const WarningDialog(
+          description: "Simpan gagal, silahkan coba lagi",
+        ),
+      );
+    });
+    setState(() {
+      _isLoading = false;
+    });
+  }
+}
+```
 
-   f. Jika berhasil, pengguna diarahkan kembali ke `ProdukPage`.
+## Read Produk Detail
 
-   g. Jika gagal, `WarningDialog` ditampilkan.
+Detail produk ditampilkan di `ProdukDetail` yang terletak di file `produk_detail.dart`.
 
+### Langkah-langkah:
 
-7. Delete Produk (produk_detail.dart):
+1. Pengguna menekan item produk di `ProdukPage`.
+2. `ProdukDetail` ditampilkan dengan informasi produk yang dipilih.
 
-   a. Pengguna menekan tombol "DELETE" di `ProdukDetail`.
+### Source Code:
 
-   b. Dialog konfirmasi ditampilkan.
+```dart
+// produk_detail.dart
 
-   c. Jika pengguna mengonfirmasi, `ProdukBloc.deleteProduk()` dipanggil.
+class ProdukDetail extends StatefulWidget {
+  Produk? produk;
+  ProdukDetail({Key? key, this.produk}) : super(key: key);
 
-   d. Jika berhasil, pengguna diarahkan kembali ke `ProdukPage`.
+  @override
+  _ProdukDetailState createState() => _ProdukDetailState();
+}
 
-   e. Jika gagal, `WarningDialog` ditampilkan.
+class _ProdukDetailState extends State<ProdukDetail> {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Detail Produk Toko Kita - Fawwaz'), 
+      ),
+      body: Center(
+        child: Column(
+          children: [
+            Text(
+              "Kode : ${widget.produk!.kodeProduk}",
+              style: const TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold),
+            ),
+            Text(
+              "Nama : ${widget.produk!.namaProduk}",
+              style: const TextStyle(fontSize: 18.0),
+            ),
+            Text(
+              "Harga : Rp. ${widget.produk!.hargaProduk.toString()}",
+              style: const TextStyle(fontSize: 18.0),
+            ),
+            _tombolHapusEdit(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
 
+## Update Produk
 
-8. Logout (produk_page.dart):
+Proses update produk juga ditangani oleh `ProdukForm` yang terletak di file `produk_form.dart`.
 
-   a. Pengguna membuka drawer menu dan menekan "Logout".
+### Langkah-langkah:
 
-   b. `LogoutBloc.logout()` dipanggil.
+1. Pengguna menekan tombol "EDIT" di `ProdukDetail`.
+2. Form produk ditampilkan dengan data produk yang ada.
+3. Pengguna mengubah data produk.
+4. Saat tombol "UBAH" ditekan, metode `ubah()` dipanggil.
+5. `ProdukBloc.updateProduk()` dipanggil dengan data produk yang diperbarui.
+6. Jika berhasil, pengguna diarahkan kembali ke `ProdukPage`.
+7. Jika gagal, `WarningDialog` ditampilkan.
 
-   c. Pengguna diarahkan kembali ke `LoginPage`.
+### Source Code:
+
+```dart
+// produk_form.dart
+
+class _ProdukFormState extends State<ProdukForm> {
+  // ... (kode lainnya)
+
+  ubah() {
+    setState(() {
+      _isLoading = true;
+    });
+    Produk updateProduk = Produk(id: widget.produk!.id!);
+    updateProduk.kodeProduk = _kodeProdukTextboxController.text;
+    updateProduk.namaProduk = _namaProdukTextboxController.text;
+    updateProduk.hargaProduk = int.parse(_hargaProdukTextboxController.text);
+    ProdukBloc.updateProduk(produk: updateProduk).then((value) {
+      Navigator.of(context).push(MaterialPageRoute(
+          builder: (BuildContext context) => const ProdukPage()));
+    }, onError: (error) {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) => const WarningDialog(
+          description: "Permintaan ubah data gagal, silahkan coba lagi",
+        ),
+      );
+    });
+    setState(() {
+      _isLoading = false;
+    });
+  }
+}
+```
+
+## Delete Produk
+
+Proses penghapusan produk ditangani di `ProdukDetail` yang terletak di file `produk_detail.dart`.
+
+### Langkah-langkah:
+
+1. Pengguna menekan tombol "DELETE" di `ProdukDetail`.
+2. Dialog konfirmasi ditampilkan.
+3. Jika pengguna mengonfirmasi, `ProdukBloc.deleteProduk()` dipanggil.
+4. Jika berhasil, pengguna diarahkan kembali ke `ProdukPage`.
+5. Jika gagal, `WarningDialog` ditampilkan.
+
+### Source Code:
+
+```dart
+// produk_detail.dart
+
+class _ProdukDetailState extends State<ProdukDetail> {
+  // ... (kode lainnya)
+
+  void confirmHapus() {
+    AlertDialog alertDialog = AlertDialog(
+      content: const Text("Yakin ingin menghapus data ini?"),
+      actions: [
+        // Tombol hapus
+        TextButton(
+          child: const Text("Ya"),
+          onPressed: () {
+            ProdukBloc.deleteProduk(id: int.parse(widget.produk!.id!)).then(
+              (value) => {
+                Navigator.of(context).pushReplacement(MaterialPageRoute(
+                    builder: (context) => const ProdukPage()))
+              },
+              onError: (error) {
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) => const WarningDialog(
+                    description: "Hapus gagal, silahkan coba lagi",
+                  ),
+                );
+              },
+            );
+          },
+        ),
+        // Tombol batal
+        TextButton(
+          child: const Text("Batal"),
+          onPressed: () => Navigator.pop(context),
+        )
+      ],
+    );
+    showDialog(builder: (context) => alertDialog, context: context);
+  }
+}
+```
+
+## Proses Logout
+
+Proses logout ditangani di `ProdukPage` yang terletak di file `produk_page.dart`.
+
+### Langkah-langkah:
+
+1. Pengguna membuka drawer menu dan menekan "Logout".
+2. `LogoutBloc.logout()` dipanggil.
+3. Pengguna diarahkan kembali ke `LoginPage`.
+
+### Source Code:
+
+```dart
+LogoutBloc.logout().then((value) => {
+  Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => LoginPage()),
+      (route) => false)
+});
+```
 
 
 # Screeenshot
