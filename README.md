@@ -1,4 +1,4 @@
-# TTokoKita Pertemuan 5
+# TokoKita Pertemuan 5
 
 Pertemuan 5 (Pertemuan 4 ada di README2.MD)
 
